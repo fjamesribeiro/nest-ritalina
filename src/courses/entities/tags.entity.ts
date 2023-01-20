@@ -15,7 +15,6 @@ export class Tag {
   @Column()
   name: string;
 
-  @JoinTable()
   @ManyToMany(() => Course, (course: Course) => course.tags)
   courses: Array<Course>;
 }

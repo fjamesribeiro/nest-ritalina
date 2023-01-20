@@ -1,8 +1,8 @@
-import { UpdateCourseDto } from './dto/create.courses.dto/update.courses.dto';
-import { CreateCourseDto } from './dto/create.courses.dto/create.courses.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 import { Course } from './entities/course.entity';
 import { Tag } from './entities/tags.entity';
 
@@ -17,11 +17,14 @@ export class CoursesService {
   ) {}
 
   findAll() {
-    return this.courseRepository.find();
+    return this.courseRepository.find({ relations: ['tags'] });
   }
 
   findOne(id: string) {
-    const res = this.courseRepository.findOne(id);
+    const res = this.courseRepository.findOne({
+      where: { id: Number(id) },
+      relations: ['tags'],
+    });
 
     if (!res) {
       throw new NotFoundException(`Curso ${id} não encontrado`);
@@ -35,8 +38,11 @@ export class CoursesService {
       createCourseDto.tags.map((name) => this.preLoadTagByName(name)),
     );
 
-    const curso = this.courseRepository.create({ ...createCourseDto, tags });
-    return this.courseRepository.save(curso);
+    const course = this.courseRepository.create({
+      ...createCourseDto,
+      tags,
+    });
+    return this.courseRepository.save(course);
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto) {
@@ -60,7 +66,9 @@ export class CoursesService {
   }
 
   async delete(id: string) {
-    const course = await this.courseRepository.findOne(id);
+    const course = await this.courseRepository.findOne({
+      where: { id: Number(id) },
+    });
 
     if (!course) {
       throw new NotFoundException(`Curso ${id} não encontrado`);
@@ -70,7 +78,7 @@ export class CoursesService {
   }
 
   private async preLoadTagByName(name: string): Promise<Tag> {
-    const tag = this.tagRepository.findOne({ name: name });
+    const tag = await this.tagRepository.findOne({ where: { name } });
 
     if (tag) {
       return tag;
